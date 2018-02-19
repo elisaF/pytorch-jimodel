@@ -58,34 +58,33 @@ class BiLSTM(nn.Module):
             last_fwd = self.hidden[0][0]
             last_bwd = self.hidden[0][1]
             edu_rep = torch.cat((last_fwd, last_bwd), dim=1)
-            # print("LSTM last hidden: ", edu_rep)  # 1x32
+            # print("LSTM last hidden: ", edu_rep.size())  # 1x32
             edu_reps[idx] = edu_rep
-        # print("Returning all edu reps: ", edu_reps.size())
-
-        # edu_reps = autograd.Variable(torch.FloatTensor(edu_reps))  # will this work??
-
+        #print("Returning all edu reps: ", edu_reps.size())
         return edu_reps
 
     def forward(self, doc):
         edu_reps = self._get_edu_reps(doc)
         edu_average = torch.mean(edu_reps, dim=0)
-        # print("Average: ", edu_average.size(), edu_average)
+        #print("Average: ", edu_average.size(), edu_average.grad_fn)
         y = self.hidden2label(edu_average)
         return y
 
 
 def train(trncorpus, vocab_size, nclasses, embedding_dim, hidden_dim, droprate, niter):
     model = BiLSTM(vocab_size, nclasses, embedding_dim, hidden_dim, droprate)
+    softmax_function = nn.LogSoftmax()
     loss_function = nn.NLLLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-4)
+    optimizer = optim.SGD(model.parameters(), lr=0.1, weight_decay=1e-4)
     print("Start training")
-    report_freq = 3000
+    report_freq = 445
     order = list(range(trncorpus.size()))
     report = 0
     sample_counter = trncorpus.size()
     niter = niter * trncorpus.size() / report_freq
     while report < niter:
         start_time = time.time()
+        complete_loss = 0
         for i in range(report_freq):
             # shuffle only on first pass and once we've gone through the whole corpus
             if sample_counter == trncorpus.size():
@@ -96,7 +95,7 @@ def train(trncorpus, vocab_size, nclasses, embedding_dim, hidden_dim, droprate, 
             # build graph for this instance
             doc = trncorpus.docs[order[sample_counter]]
             sample_counter += 1
-
+            # print("Training on doc ", repr(doc))
             # Step 1. Remember that Pytorch accumulates gradients.
             # We need to clear them out before each instance
             model.zero_grad()
@@ -107,14 +106,17 @@ def train(trncorpus, vocab_size, nclasses, embedding_dim, hidden_dim, droprate, 
 
             # Step 3. Run our forward pass.
             pred_target = model(doc)
-
+            # print("Pred target: ", pred_target)
             # Step 4. Compute the loss, gradients, and update the parameters by
             # calling optimizer.step()
-            loss = loss_function(pred_target, target)
+            loss = loss_function(softmax_function(pred_target), target)
+            complete_loss += loss.data
             loss.backward()
             optimizer.step()
             end_time = time.time()
+            # print("Loss: ", loss.data)
         report += 1
+        print("Total loss: ", complete_loss)
         print("Finished report ", report, "(", report / float(niter), ") in ", end_time-start_time)
         # Check predictions after training
         num_correct = 0
