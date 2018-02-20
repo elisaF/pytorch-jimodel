@@ -3,12 +3,14 @@ from collections import defaultdict
 import logging
 import pickle
 
+
 class Edu(object):
     def __init__(self):
-        self.indeces = []
+        self.indices = []
 
     def __repr__(self):
-        return '{0.indeces}'.format(self)
+        return '{0.indices}'.format(self)
+
 
 class Doc(object):
     def __init__(self):
@@ -70,12 +72,10 @@ def read_corpus(filename, dictionary, b_update):
                     corpus.docs.append(doc)
                 else:
                     logging.warning("Empty doc: %s", doc.filename)
-                #print("Read one document: ", repr(doc))
                 doc = Doc()  # reset this variable
 
         if len(doc.edus) > 0:
             doc.order = topological_sorting(doc)
-            #print("filename = ", doc.filename)
             print_int_vector(doc.order)
             corpus.docs.append(doc)
 
@@ -84,17 +84,16 @@ def read_corpus(filename, dictionary, b_update):
 
 
 def read_edu(edu_text, dictionary, b_update):
-    #print("Edu text: ", edu_text)
     tokens = edu_text.split(" ")
     edu = Edu()
     for tok in tokens:
         if b_update or tok in dictionary.vocab_dict:
-            edu.indeces.append(dictionary.convert(tok))
+            edu.indices.append(dictionary.convert(tok))
         else:
-            edu.indeces.append(dictionary.convert("UNK"))
-    if len(edu.indeces) == 0:
+            edu.indices.append(dictionary.convert("UNK"))
+    if len(edu.indices) == 0:
         # just in case there is a weird empty sentence
-        edu.indeces.append(dictionary.convert("UNK"))
+        edu.indices.append(dictionary.convert("UNK"))
     return edu
 
 
@@ -148,3 +147,4 @@ class Dictionary:
 
     def save_dict(self, fname):
         pickle.dump(self.vocab_dict, open(fname, 'wb'))
+

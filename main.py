@@ -11,37 +11,37 @@ def main():
     ###############################################################################
     d = util.Dictionary()
     if args.task == "train":
+        logging.info("Reading train...")
         trncorpus = util.read_corpus(args.ftrn, d, True)
         d.freeze()  # no new word types allowed
         vocab_size = d.size()
-        print("Train docs: ", trncorpus.size())
-        logging.info("[TextClass] Train vocab size: %s", vocab_size)
         # save dict
         d.save_dict(fprefix+".dict")
-        # read dev corpus
+        logging.info("Reading dev...")
         devcorpus = util.read_corpus(args.fdev, d, False)
     elif args.task == "test":
+        logging.info("Reading test...")
         d.load_dict(args.fdct)
         d.freeze()
         vocab_size = d.size()
-        logging.info("[TextClass] Test vocab size: %s", vocab_size)
         # load test corpus
         tstcorpus = util.read_corpus(args.ftst, d, False)
 
     ###############################################################################
     # Build the model
     ###############################################################################
-    #if args.fmod:
-    #    # load pre-trained model
-    #    with open(args.fmod, 'rb') as f:
-    #        model = torch.load(f)
+    if args.fmod:
+        # load pre-trained model
+        trained = model.load_model(args.fmod, vocab_size, args.nclass, args.inputdim, args.hiddendim, args.nlayer,
+                                   args.droprate)
 
-    trained = model.train(trncorpus, vocab_size, args.nclass, args.inputdim, args.hiddendim, args.droprate, args.niter)
-    #tc = textclass.TextClass(trncorpus, devcorpus, tstcorpus,
-    #                         args.inputdim, args.hiddendim, args.nlayer, args.nclass, args.ndisrela, vocab_size, d,
-    #                         args.arch, args.trainer, args.lr, args.droprate, args.evalfreq, args.niter, args.verbose,
-    #                         args.fembed, model)
-    model.evaluate(trained, devcorpus)
+    else:
+        trained = model.train(trncorpus, vocab_size, args.nclass, args.inputdim, args.hiddendim, args.nlayer,
+                              args.trainer, args.lr, args.droprate, args.niter, args.logfreq, args.verbose, args.gpu)
+    dev_accuracy = model.evaluate(trained, devcorpus)
+    logging.info("Accuracy on dev: %s", dev_accuracy)
+    model.save_model(trained, fprefix + ".model")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -63,10 +63,10 @@ if __name__ == '__main__':
     parser.add_argument("--lr", help="learning rate", type=float, default=0.1)
     parser.add_argument("--droprate", help="dropout rate", type=float, default=0.0)
     parser.add_argument("--niter", help="number of passes on the training set", type=int, default=1)
-    parser.add_argument("--evalfreq", help="evaluation frequency on dev data", type=int, default=1)
-    parser.add_argument("--fembed", help="word embedding file")
     parser.add_argument("--path", help="path to save files", default=".")
-    parser.add_argument("-v", "--verbose", help="print training information", action="store_true")
+    parser.add_argument("--logfreq", help="log frequency on dev data", type=int, default=1000)
+    parser.add_argument("-v", "--verbose", help="print training information", action="store_true", default=True)
+    parser.add_argument("-g", "--gpu", help="use GPU", action="store_true", default=False)
     args = parser.parse_args()
 
     # check arguments
@@ -86,32 +86,33 @@ if __name__ == '__main__':
         os.makedirs(args.path)
         logging.info("Successfully created folder: ", args.path)
 
-    logging.info("[TextClass] training file: %s", args.ftrn)
-    logging.info("[TextClass] dev file: %s", args.fdev)
-    logging.info("[TextClass] test file: %s", args.ftst)
-    logging.info("[TextClass] model file: %s", args.fmod)
-    logging.info("[TextClass] model architecture: %s", args.arch)
-    logging.info("[TextClass] number of doc classes: %s", args.nclass)
-    logging.info("[TextClass] number of discourse relations: %s", args.ndisrela)
-    logging.info("[TextClass] input dimension: %s", args.inputdim)
-    logging.info("[TextClass] hidden dimension: %s", args.hiddendim)
-    logging.info("[TextClass] number of hidden layers: %s", args.nlayer)
-    logging.info("[TextClass] training method: %s", args.trainer)
-    logging.info("[TextClass] learning rate: %s", args.lr)
-    logging.info("[TextClass] number of iterations: %s", args.niter)
-    logging.info("[TextClass] dropout rate (0: no dropout): %s", args. droprate)
-    logging.info("[TextClass] evaluation frequency on dev data: %s", args.evalfreq)
-    logging.info("[TextClass] word embedding file: %s", args.fembed)
-    logging.info("[TextClass] output path: %s", args.path)
-    logging.info("[TextClass] verbose: %s", args.verbose)
+    logging.info("training file: %s", args.ftrn)
+    logging.info("dev file: %s", args.fdev)
+    logging.info("test file: %s", args.ftst)
+    logging.info("model file: %s", args.fmod)
+    logging.info("model architecture: %s", args.arch)
+    logging.info("number of doc classes: %s", args.nclass)
+    logging.info("number of discourse relations: %s", args.ndisrela)
+    logging.info("input dimension: %s", args.inputdim)
+    logging.info("hidden dimension: %s", args.hiddendim)
+    logging.info("number of hidden layers: %s", args.nlayer)
+    logging.info("training method: %s", args.trainer)
+    logging.info("learning rate: %s", args.lr)
+    logging.info("number of iterations: %s", args.niter)
+    logging.info("dropout rate (0: no dropout): %s", args. droprate)
+    logging.info("output path: %s", args.path)
+    logging.info("log frequency: %s", args.logfreq)
+    logging.info("verbose: %s", args.verbose)
+    logging.info("use GPU: %s", args.gpu)
 
     # Set the random seed manually for reproducibility.
     torch.manual_seed(1)
     if torch.cuda.is_available():
-        if not args.cuda:
-            print("WARNING: You have a CUDA device, so you should probably run with --cuda")
+        if not args.gpu:
+            print("WARNING: You have a CUDA device, so you should probably run with --gpu")
         else:
             torch.cuda.manual_seed(1)
 
     main()
+
 
