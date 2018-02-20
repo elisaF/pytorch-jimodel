@@ -95,7 +95,7 @@ def train(trncorpus, vocab_size, nclasses, embedding_dim, hidden_dim, nlayers,
             if sample_counter == trncorpus.size():
                 sample_counter = 0
                 epoch_counter += 1
-                print("*** Starting new epoch %s", epoch_counter)
+                logging.info("*** Starting new epoch %s", epoch_counter)
                 random.shuffle(order)
 
             # build graph for this instance
