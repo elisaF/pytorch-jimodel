@@ -36,8 +36,8 @@ def main():
                                    args.droprate)
 
     else:
-        trained = model.train(trncorpus, vocab_size, args.nclass, args.inputdim, args.hiddendim, args.nlayer,
-                              args.trainer, args.lr, args.droprate, args.niter, args.logfreq, args.verbose, args.gpu)
+        trained = model.train(trncorpus, devcorpus, vocab_size, args.nclass, args.inputdim, args.hiddendim, args.nlayer,
+                              args.trainer, args.lr, args.droprate, args.niter, args.logfreq, args.verbose)
     dev_accuracy = model.evaluate(trained, devcorpus)
     logging.info("Accuracy on dev: %s", dev_accuracy)
     model.save_model(trained, fprefix + ".model")
@@ -66,7 +66,6 @@ if __name__ == '__main__':
     parser.add_argument("--path", help="path to save files", default=".")
     parser.add_argument("--logfreq", help="log frequency on dev data", type=int, default=1000)
     parser.add_argument("-v", "--verbose", help="print training information", action="store_true", default=True)
-    parser.add_argument("-g", "--gpu", help="use GPU", action="store_true", default=False)
     args = parser.parse_args()
 
     # check arguments
@@ -103,16 +102,14 @@ if __name__ == '__main__':
     logging.info("output path: %s", args.path)
     logging.info("log frequency: %s", args.logfreq)
     logging.info("verbose: %s", args.verbose)
-    logging.info("use GPU: %s", args.gpu)
 
     # Set the random seed manually for reproducibility.
-    torch.manual_seed(1)
     if torch.cuda.is_available():
-        if not args.gpu:
-            print("WARNING: You have a CUDA device, so you should probably run with --gpu")
-        else:
-            torch.cuda.manual_seed(1)
-
+        logging.info("using GPU.")
+        torch.cuda.manual_seed(1)
+    else:
+        logging.info("using CPU.")
+        torch.manual_seed(1)
     main()
 
 
