@@ -63,14 +63,15 @@ def train(trncorpus, devcorpus, vocab_size, nclasses, embedding_dim, hidden_dim,
           trainer, lr, droprate, niter, report_freq, verbose):
     model = BiLSTM(vocab_size, nclasses, embedding_dim, hidden_dim, nlayers, droprate)
     model.cuda()
-    softmax_function = nn.LogSoftmax()
-    loss_function = nn.NLLLoss()
+    # softmax_function = nn.LogSoftmax()
+    # loss_function = nn.NLLLoss()
+    criterion = nn.CrossEntropyLoss()
     if trainer == "sgd":
-        optimizer = optim.SGD(model.parameters(), lr=lr)
+        optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=0.0001)
     elif trainer == "adagrad":
-        optimizer = optim.Adagrad(model.parameters(), lr=lr)
+        optimizer = optim.Adagrad(model.parameters(), lr=lr, weight_decay=0.0001)
     elif trainer == "adam":
-        optimizer = optim.Adam(model.parameters(), lr=lr)
+        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.0001)
 
     # create dev sample for reporting
     dev_sample = random.sample(devcorpus.docs, report_freq)
@@ -108,7 +109,9 @@ def train(trncorpus, devcorpus, vocab_size, nclasses, embedding_dim, hidden_dim,
             pred_target = model(doc)
             # Step 4. Compute the loss, gradients, and update the parameters by
             # calling optimizer.step()
-            loss = loss_function(softmax_function(pred_target), target)
+            loss = criterion(pred_target, target)
+            torch.nn.utils.clip_grad_norm(model.parameters(), 5)
+            # loss = loss_function(softmax_function(pred_target), target)
             complete_loss += loss.data[0]
             loss.backward()
             optimizer.step()
@@ -137,7 +140,7 @@ def evaluate(model, docs):
             num_correct += 1
         preds.append(predicted[0])
         labels.append(doc.label)
-    #logging.info("Preds vs .labels:\n%s \n%s", preds[:50], labels[:50])
+    # logging.info("Preds vs .labels:\n%s \n%s", preds[:50], labels[:50])
     return num_correct / len(docs)
 
 
