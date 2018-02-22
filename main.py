@@ -38,8 +38,8 @@ def main():
     else:
         trained = model.train(trncorpus, devcorpus, vocab_size, args.nclass, args.inputdim, args.hiddendim, args.nlayer,
                               args.trainer, args.lr, args.droprate, args.niter, args.logfreq, args.verbose)
-    dev_accuracy = model.evaluate(trained, devcorpus)
-    logging.info("Accuracy on dev: %s", dev_accuracy)
+    dev_accuracy = model.evaluate(trained, devcorpus.docs)
+    logging.info("Final Accuracy on dev: %s", dev_accuracy)
     model.save_model(trained, fprefix + ".model")
 
 

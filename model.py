@@ -11,9 +11,9 @@ def prepare_sequence(edus):
     # sort, pad with zeros, then transpose
     edus.sort(key=len, reverse=True)
     edu_lengths = [len(edu) for edu in edus]
-    seq_tensor = torch.zeros((len(edus), edu_lengths[0])).type(itype)
+    seq_tensor = torch.zeros((len(edus), edu_lengths[0])).long()
     for idx, (seq, seqlen) in enumerate(zip(edus, edu_lengths)):
-        seq_tensor[idx, :seqlen] = torch.LongTensor(seq).type(itype)
+        seq_tensor[idx, :seqlen] = torch.LongTensor(seq)
     return seq_tensor.transpose(0, 1), edu_lengths
 
 
@@ -37,13 +37,14 @@ class BiLSTM(nn.Module):
     def init_hidden(self, batch_size):
         h0 = autograd.Variable(torch.zeros(self.nlayers*2, batch_size, self.hidden_dim // 2))
         c0 = autograd.Variable(torch.zeros(self.nlayers*2, batch_size, self.hidden_dim // 2))
+        #return (h0, c0)
         return (h0.cuda(), c0.cuda())
 
     def _get_edu_reps(self, doc):
         edus = [edu.indices for edu in doc.edus]
         padded_edus, edu_lengths = prepare_sequence(edus)
         self.hidden = self.init_hidden(padded_edus.size(-1))
-        embeds = self.word_embeds(autograd.Variable(torch.LongTensor(padded_edus).type(itype)).cuda())
+        embeds = self.word_embeds(autograd.Variable(torch.LongTensor(padded_edus).cuda()))
         embeds_dropout = self.dropout(embeds)
         embeds_packed = pack_padded_sequence(embeds_dropout, edu_lengths)
         lstm_out, (ht, ct) = self.lstm(embeds_packed, self.hidden)
@@ -101,7 +102,7 @@ def train(trncorpus, devcorpus, vocab_size, nclasses, embedding_dim, hidden_dim,
 
             # Step 2. Get our inputs ready for the network, that is,
             # turn them into Variables of word indices.
-            target = autograd.Variable(torch.LongTensor([doc.label]).type(itype)).cuda()
+            target = autograd.Variable(torch.LongTensor([doc.label])).cuda()
 
             # Step 3. Run our forward pass.
             pred_target = model(doc)
@@ -118,7 +119,7 @@ def train(trncorpus, devcorpus, vocab_size, nclasses, embedding_dim, hidden_dim,
             logging.info("Finished report %s (%s) in %s seconds.", report, report / float(niter), end_time-start_time)
             # Check predictions after training
             dev_accuracy = evaluate(model, dev_sample)
-            logging.info("Accuracy on training: %s (%s)", dev_accuracy, best_dev_accuracy)
+            logging.info("Accuracy on dev: %s (%s)", dev_accuracy, best_dev_accuracy)
             if dev_accuracy > best_dev_accuracy:
                 best_dev_accuracy = dev_accuracy
     logging.info("Done training")
@@ -136,7 +137,7 @@ def evaluate(model, docs):
             num_correct += 1
         preds.append(predicted[0])
         labels.append(doc.label)
-    logging.info("Preds vs .labels:\n%s \n%s", preds[:50], labels[:50])
+    #logging.info("Preds vs .labels:\n%s \n%s", preds[:50], labels[:50])
     return num_correct / len(docs)
 
 
