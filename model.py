@@ -60,11 +60,11 @@ class BiLSTM(nn.Module):
 
 
 def train(trncorpus, devcorpus, vocab_size, nclasses, embedding_dim, hidden_dim, nlayers,
-          trainer, lr, droprate, niter, report_freq, verbose):
-    model = BiLSTM(vocab_size, nclasses, embedding_dim, hidden_dim, nlayers, droprate)
-    model.cuda()
-    # softmax_function = nn.LogSoftmax()
-    # loss_function = nn.NLLLoss()
+          trainer, lr, droprate, niter, report_freq, verbose, model_fname, model=None):
+    if not model:
+        model = BiLSTM(vocab_size, nclasses, embedding_dim, hidden_dim, nlayers, droprate)
+        model.cuda()
+
     criterion = nn.CrossEntropyLoss()
     if trainer == "sgd":
         optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=0.0001)
@@ -125,6 +125,7 @@ def train(trncorpus, devcorpus, vocab_size, nclasses, embedding_dim, hidden_dim,
             logging.info("Accuracy on dev: %s (%s)", dev_accuracy, best_dev_accuracy)
             if dev_accuracy > best_dev_accuracy:
                 best_dev_accuracy = dev_accuracy
+                save_model(model, model_fname)
     logging.info("Done training")
     return model
 
@@ -150,7 +151,8 @@ def save_model(model, fname):
 
 def load_model(fname, vocab_size, nclasses, embedding_dim, hidden_dim, nlayers, droprate):
     model = BiLSTM(vocab_size, nclasses, embedding_dim, hidden_dim, nlayers, droprate)
-    model.cuda()
     model.load_state_dict(torch.load(fname))
+    model.cuda()
+
     return model
 

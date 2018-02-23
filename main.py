@@ -30,17 +30,26 @@ def main():
     ###############################################################################
     # Build the model
     ###############################################################################
-    if args.fmod:
-        # load pre-trained model
-        trained = model.load_model(args.fmod, vocab_size, args.nclass, args.inputdim, args.hiddendim, args.nlayer,
-                                   args.droprate)
+    if args.task == "train":
+        model_fname = fprefix + ".model"
+        pretrained_model = None
+        if args.fmod:
+            # load pre-trained model
+            pretrained_model = model.load_model(args.fmod, vocab_size, args.nclass, args.inputdim, args.hiddendim,
+                                             args.nlayer, args.droprate)
+
+        trained = model.train(trncorpus, devcorpus, vocab_size, args.nclass, args.inputdim, args.hiddendim, args.nlayer,
+                              args.trainer, args.lr, args.droprate, args.niter, args.logfreq, args.verbose, model_fname,
+                              pretrained_model)
+        dev_accuracy = model.evaluate(trained, devcorpus.docs)
+        logging.info("Final Accuracy on dev: %s", dev_accuracy)
+        model.save_model(trained, model_fname)
 
     else:
-        trained = model.train(trncorpus, devcorpus, vocab_size, args.nclass, args.inputdim, args.hiddendim, args.nlayer,
-                              args.trainer, args.lr, args.droprate, args.niter, args.logfreq, args.verbose)
-    dev_accuracy = model.evaluate(trained, devcorpus.docs)
-    logging.info("Final Accuracy on dev: %s", dev_accuracy)
-    model.save_model(trained, fprefix + ".model")
+        trained_model = model.load_model(args.fmod, vocab_size, args.nclass, args.inputdim, args.hiddendim,
+                                         args.nlayer, args.droprate)
+        tst_accuracy = model.evaluate(trained_model, tstcorpus.docs)
+        logging.info("Final Accuracy on test: %s", tst_accuracy)
 
 
 if __name__ == '__main__':
@@ -84,7 +93,7 @@ if __name__ == '__main__':
     if not os.path.exists(args.path):
         os.makedirs(args.path)
         logging.info("Successfully created folder: ", args.path)
-
+    logging.info("PID: %s", repr(os.getpid()))
     logging.info("training file: %s", args.ftrn)
     logging.info("dev file: %s", args.fdev)
     logging.info("test file: %s", args.ftst)
