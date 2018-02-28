@@ -37,6 +37,7 @@ def main():
             # load pre-trained model
             pretrained_model = model.load_model(args.fmod, vocab_size, args.nclass, args.inputdim, args.hiddendim,
                                              args.nlayer, args.droprate)
+            logging.info("Successfully loaded pretrained model.")
 
         trained = model.train(trncorpus, devcorpus, vocab_size, args.nclass, args.inputdim, args.hiddendim, args.nlayer,
                               args.trainer, args.lr, args.droprate, args.niter, args.logfreq, args.verbose, model_fname,
