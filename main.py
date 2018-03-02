@@ -94,6 +94,7 @@ if __name__ == '__main__':
     if not os.path.exists(args.path):
         os.makedirs(args.path)
         logging.info("Successfully created folder: ", args.path)
+    print("PID: %s", repr(os.getpid()))
     logging.info("PID: %s", repr(os.getpid()))
     logging.info("training file: %s", args.ftrn)
     logging.info("dev file: %s", args.fdev)

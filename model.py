@@ -74,7 +74,7 @@ def train(trncorpus, devcorpus, vocab_size, nclasses, embedding_dim, hidden_dim,
         optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.0001)
 
     # create dev sample for reporting
-    dev_sample = random.sample(devcorpus.docs, report_freq)
+    dev_sample = random.sample(devcorpus.docs, report_freq//2)
 
     logging.info("Start training")
     order = list(range(trncorpus.size()))
@@ -126,6 +126,7 @@ def train(trncorpus, devcorpus, vocab_size, nclasses, embedding_dim, hidden_dim,
             if dev_accuracy > best_dev_accuracy:
                 best_dev_accuracy = dev_accuracy
                 save_model(model, model_fname)
+                logging.info("Saved model to %s.", model_fname)
     logging.info("Done training")
     return model
 
