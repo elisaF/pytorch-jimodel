@@ -16,9 +16,10 @@ def main():
         d.freeze()  # no new word types allowed
         vocab_size = d.size()
         # save dict
-        d.save_dict(fprefix+".dict")
+        d.save_dict(fprefix + ".dict")
         logging.info("Reading dev...")
         devcorpus = util.read_corpus(args.fdev, d, False)
+
     elif args.task == "test":
         logging.info("Reading test...")
         d.load_dict(args.fdct)

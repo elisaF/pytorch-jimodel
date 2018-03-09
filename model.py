@@ -67,11 +67,11 @@ def train(trncorpus, devcorpus, vocab_size, nclasses, embedding_dim, hidden_dim,
 
     criterion = nn.CrossEntropyLoss()
     if trainer == "sgd":
-        optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=0.0001)
+        optimizer = optim.SGD(model.parameters(), lr=lr)#, weight_decay=0.0001) ## remove weight decay!
     elif trainer == "adagrad":
-        optimizer = optim.Adagrad(model.parameters(), lr=lr, weight_decay=0.0001)
+        optimizer = optim.Adagrad(model.parameters(), lr=lr)#, weight_decay=0.0001)
     elif trainer == "adam":
-        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.0001)
+        optimizer = optim.Adam(model.parameters(), lr=lr)#, weight_decay=0.0001)
 
     # create dev sample for reporting
     dev_sample = random.sample(devcorpus.docs, report_freq//2)
@@ -110,10 +110,11 @@ def train(trncorpus, devcorpus, vocab_size, nclasses, embedding_dim, hidden_dim,
             # Step 4. Compute the loss, gradients, and update the parameters by
             # calling optimizer.step()
             loss = criterion(pred_target, target)
+            loss.backward()
             torch.nn.utils.clip_grad_norm(model.parameters(), 5)
             # loss = loss_function(softmax_function(pred_target), target)
             complete_loss += loss.data[0]
-            loss.backward()
+            #loss.backward()
             optimizer.step()
             end_time = time.time()
         report += 1
